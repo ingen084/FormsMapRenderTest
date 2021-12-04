@@ -1,5 +1,6 @@
 ﻿using FormsMapRenderTest.Projections;
 using KyoshinMonitorLib;
+using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -159,29 +160,32 @@ namespace FormsMapRenderTest
 			ReducedPointsCache.Clear();
 		}
 
-		public void Draw(Graphics context, MapProjection proj, int zoom, Brush fill, Pen border, PointD leftTop, double scale)
+		public void Draw(SKCanvas canvas, MapProjection proj, int zoom, SKPaint paint, PointD leftTop, double scale)
 		{
 			var pointsList = GetOrCreatePointsCache(proj, zoom);
 			if (pointsList == null)
 				return;
 
-			for (var p = 0; p < pointsList.Length; p++)
-			{
-				var points = pointsList[p];
-				var length = points.Length;
-				var renderPoints = new PointF[length];
-				for (var i = 0; i < length; i++)
-					renderPoints[i] = new PointF(
-						(float)((points[i].X - leftTop.X) * scale),
-						(float)((points[i].Y - leftTop.Y) * scale));
+			using (var path = new SKPath())
+				for (var p = 0; p < pointsList.Length; p++)
+				{
+					var points = pointsList[p];
+					var length = points.Length;
+					for (var i = 0; i < length; i++)
+					{
+						var point = new SKPoint(
+							(float)((points[i].X - leftTop.X) * scale),
+							(float)((points[i].Y - leftTop.Y) * scale));
+						if (i == 0)
+							path.MoveTo(point);
+						else
+							path.LineTo(point);
+					}
 
-				if (Type == FeatureType.Polygon)
-					context.FillPolygon(fill, renderPoints);
-				else if (IsClosed)
-					context.DrawPolygon(border, renderPoints);
-				else
-					context.DrawLines(border, renderPoints);
-			}
+					if (Type == FeatureType.Polygon || IsClosed)
+						path.Close();
+					canvas.DrawPath(path, paint);
+				}
 		}
 	}
 	public enum FeatureType

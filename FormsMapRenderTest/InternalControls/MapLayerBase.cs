@@ -1,18 +1,16 @@
 ﻿using FormsMapRenderTest.Projections;
 using KyoshinMonitorLib;
-using System.Windows.Forms;
+using SkiaSharp;
 
 namespace FormsMapRenderTest.InternalControls
 {
-	internal abstract class MapLayerBase : Control
+	internal abstract class MapLayerBase
 	{
 		public MapProjection Projection { get; set; }
 		public double Zoom { get; set; }
 		public Location CenterLocation { get; set; }
 
-		public MapLayerBase()
-		{
-			DoubleBuffered = true;
-		}
+
+		public abstract void OnRender(SKCanvas canvas);
 	}
 }

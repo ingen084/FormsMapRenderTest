@@ -29,7 +29,7 @@ namespace FormsMapRenderTest
 
 		public static PointD[] ToPixedAndRedction(this Location[] nodes, MapProjection projection, double zoom, bool closed)
 		{
-			var points = DouglasPeucker.Reduction(nodes.Select(n => n.ToPixel(projection, zoom)).ToArray(), 2, closed);
+			var points = DouglasPeucker.Reduction(nodes.Select(n => n.ToPixel(projection, zoom)).ToArray(), 1, closed);
 			if (
 				points.Length <= 1 ||
 				(closed && points.Length <= 4)

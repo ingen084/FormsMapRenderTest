@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkiaSharp;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
@@ -34,12 +35,38 @@ namespace FormsMapRenderTest.InternalControls
 		}
 
 		#region ResourceCache
-		private Pen CoastlineStroke { get; set; } = new Pen(Brushes.Blue, 1);
-		private Pen PrefStroke { get; set; } = new Pen(Brushes.Red, .6f);
-		private Pen AreaStroke { get; set; } = new Pen(Brushes.Green, .4f);
+		private SKPaint CoastlineStroke { get; set; } = new SKPaint
+		{
+			Style = SKPaintStyle.Stroke,
+			Color = SKColors.Green,
+			StrokeWidth = 1,
+			IsAntialias = true,
+		};
+		private SKPaint PrefStroke { get; set; } = new SKPaint
+		{
+			Style = SKPaintStyle.Stroke,
+			Color = SKColors.Green,
+			StrokeWidth = .8f,
+			IsAntialias = true,
+		};
+		private SKPaint AreaStroke { get; set; } = new SKPaint
+		{
+			Style = SKPaintStyle.Stroke,
+			Color = SKColors.Green,
+			StrokeWidth = .4f,
+			IsAntialias = true,
+		};
 
-		private Brush LandFill { get; set; } = Brushes.Snow;
-		private Brush OverSeasLandFill { get; set; } = Brushes.DimGray;
+		private SKPaint LandFill { get; set; } = new SKPaint
+		{
+			Style = SKPaintStyle.Fill,
+			Color = new SKColor(242, 239, 233),
+		};
+		private SKPaint OverSeasLandFill { get; set; } = new SKPaint
+		{
+			Style = SKPaintStyle.Fill,
+			Color = new SKColor(169, 169, 169),
+		};
 
 		private bool InvalidateLandStroke { get; set; }
 		private bool InvalidatePrefStroke { get; set; }
@@ -63,10 +90,8 @@ namespace FormsMapRenderTest.InternalControls
 		}
 		#endregion
 
-		protected override void OnPaint(PaintEventArgs e)
+		public override void OnRender(SKCanvas canvas)
 		{
-			base.OnPaint(e);
-
 			//e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 			//e.Graphics.Clear(Color.Transparent);
 
@@ -82,7 +107,7 @@ namespace FormsMapRenderTest.InternalControls
 			var leftTop = LeftTopLocation.CastLocation().ToPixel(Projection, baseZoom);
 
 			// とりあえず海外の描画を行う
-			RenderOverseas(e.Graphics, leftTop, scale, baseZoom);
+			RenderOverseas(canvas, leftTop, scale, baseZoom);
 
 			var useLayerType = PrimaryRenderLayer;
 			if (baseZoom <= 5)
@@ -98,19 +123,19 @@ namespace FormsMapRenderTest.InternalControls
 				switch (f.Type)
 				{
 					case FeatureType.Polygon:
-						f.Draw(e.Graphics, Projection, baseZoom, LandFill, null, leftTop, scale);
+						f.Draw(canvas, Projection, baseZoom, LandFill, leftTop, scale);
 						break;
 					case FeatureType.AdminBoundary:
 						if (!InvalidatePrefStroke && baseZoom > 5)
-							f.Draw(e.Graphics, Projection, baseZoom, null, PrefStroke, leftTop, scale);
+							f.Draw(canvas, Projection, baseZoom, PrefStroke, leftTop, scale);
 						break;
 					case FeatureType.Coastline:
 						if (!InvalidateLandStroke && baseZoom > 5)
-							f.Draw(e.Graphics, Projection, baseZoom, null, CoastlineStroke, leftTop, scale);
+							f.Draw(canvas, Projection, baseZoom, CoastlineStroke, leftTop, scale);
 						break;
 					case FeatureType.AreaBoundary:
 						if (!InvalidateAreaStroke && baseZoom > 5)
-							f.Draw(e.Graphics, Projection, baseZoom, null, AreaStroke, leftTop, scale);
+							f.Draw(canvas, Projection, baseZoom, AreaStroke, leftTop, scale);
 						break;
 				}
 			}
@@ -118,7 +143,7 @@ namespace FormsMapRenderTest.InternalControls
 		/// <summary>
 		/// 海外を描画する
 		/// </summary>
-		private void RenderOverseas(Graphics g, PointD leftTop, double scale, int baseZoom)
+		private void RenderOverseas(SKCanvas canvas, PointD leftTop, double scale, int baseZoom)
 		{
 			if (!Controllers.ContainsKey(LandLayerType.WorldWithoutJapan))
 				return;
@@ -127,7 +152,7 @@ namespace FormsMapRenderTest.InternalControls
 			{
 				if (f.Type != FeatureType.Polygon)
 					continue;
-				f.Draw(g, Projection, baseZoom, OverSeasLandFill, null, leftTop, scale);
+				f.Draw(canvas, Projection, baseZoom, OverSeasLandFill, leftTop, scale);
 			}
 		}
 	}

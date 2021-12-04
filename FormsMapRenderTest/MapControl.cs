@@ -1,6 +1,8 @@
 ﻿using FormsMapRenderTest.InternalControls;
 using FormsMapRenderTest.Projections;
 using KyoshinMonitorLib;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -85,7 +87,7 @@ namespace FormsMapRenderTest
 					Task.Run(async () =>
 					{
 						await LandLayer.SetupMapAsync(map, (int)Math.Ceiling(MinZoom), (int)Math.Ceiling(MaxZoom));
-						Invoke(new Action(LandLayer.Invalidate));
+						Invoke(new Action(InvalidateChildVisual));
 					});
 			}
 		}
@@ -125,23 +127,29 @@ namespace FormsMapRenderTest
 
 		public RectD PaddedRect { get; private set; }
 
+		private SKGLControl SKControl { get; set; }
+
 		private LandLayer LandLayer { get; set; }
 		//private OverlayLayer OverlayLayer { get; set; }
 		//private RealtimeOverlayLayer RealtimeOverlayLayer { get; set; }
 
 		protected override void OnLoad(EventArgs e)
 		{
-			Controls.Add(LandLayer = new LandLayer
+			Controls.Add(SKControl = new SKGLControl
+			{
+				Dock = DockStyle.Fill,
+			});
+			SKControl.PaintSurface += PaintSurface;
+			LandLayer = new LandLayer
 			{
 				Projection = Projection,
 				Zoom = Zoom,
 				CenterLocation = CenterLocation,
-				Dock = DockStyle.Fill,
-			});
+			};
 			LandLayer.RefleshResourceCache();
 			// TODO: やっつけイベント
-			LandLayer.MouseMove += (s, e2) => OnMouseMove(e2);
-			LandLayer.MouseDown += (s, e2) => OnMouseDown(e2);
+			SKControl.MouseMove += (s, e2) => OnMouseMove(e2);
+			SKControl.MouseDown += (s, e2) => OnMouseDown(e2);
 
 			if (Map != null)
 			{
@@ -151,7 +159,7 @@ namespace FormsMapRenderTest
 				Task.Run(async () =>
 				{
 					await LandLayer.SetupMapAsync(map, (int)Math.Ceiling(minZoom), (int)Math.Ceiling(maxZoom));
-					Invoke(new Action(LandLayer.Invalidate));
+					Invoke(new Action(InvalidateChildVisual));
 				});
 			}
 			//Children.Add(OverlayLayer = new OverlayLayer
@@ -179,6 +187,14 @@ namespace FormsMapRenderTest
 
 			base.OnLoad(e);
 		}
+
+		SKColor fillBrush = new SKColor(170, 211, 223);
+		private void PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
+		{
+			e.Surface.Canvas.Clear(fillBrush);
+			LandLayer.OnRender(e.Surface.Canvas);
+		}
+
 		protected override void OnSizeChanged(EventArgs e)
 		{
 			ApplySize();
@@ -218,7 +234,8 @@ namespace FormsMapRenderTest
 
 		public void InvalidateChildVisual()
 		{
-			LandLayer?.Invalidate();
+			SKControl?.Invalidate();
+			//LandLayer?.Invalidate();
 			//OverlayLayer?.InvalidateVisual();
 			//RealtimeOverlayLayer?.InvalidateVisual();
 		}
